@@ -1,0 +1,166 @@
+ /*
+       * EN EL CLIENTE:
+     1º copio y pego el servicioCalculadora.thrift del servidor dentro de la carpeta thrift
+     
+    double operacion (1: double operando1)throws (1: CalculadoraException excepcion),
+	double raiz (1: double operando1)throws (1: CalculadoraException excepcion),
+	string getOperacion ()throws (1: CalculadoraException excepcion),
+	
+	2º ejecutarCMD:
+		- cd ruta al thrift de la practica
+		-thrift-0.21.0.exe --gen java ServicioCalculadora.thrift
+		-refresh y copiar y pegar el thrifStubs en el src/main/java y se crea solo el package
+       *  
+    3º Adaptador:
+    
+       crear estos metodos o similares:
+       
+   public double operacion(double operando) throws Exception {
+        try {
+            openConnection();
+            return cliente.operacion(operando);
+        } catch (CalculadoraException e) {
+            throw new Exception(e.getDescription());
+        } catch (TException e) {
+            e.printStackTrace();
+            return 0;
+        } finally {
+            closeConnection();
+        }
+    }
+    
+    public double raiz(double operando) throws Exception{
+        try {
+            openConnection();
+            return cliente.raiz(operando);
+        } catch (CalculadoraException e) {
+            throw new Exception(e.getDescription());
+        } catch (TException e) {
+            e.printStackTrace();
+            return 0;
+        } finally {
+            closeConnection();
+        }
+    }
+   
+    public String getOperacion() {
+        try {
+            openConnection();
+            return cliente.getOperacion();
+        } catch (TException e) {
+            e.printStackTrace();
+            return "Ninguna";
+        } finally {
+            closeConnection();
+        }
+    }
+ 
+    public String getOperacion() {
+        String operacion = "";
+        try {
+            openConnection();
+            operacion = cliente.getOperacion();  // Llama al servicio Thrift para obtener el tipo de operación
+        } catch (TException e) {
+            e.printStackTrace();
+        } finally {
+            closeConnection();
+        }
+        return operacion;
+    }
+     
+       * */ 
+ /*
+       *  EN EL SERV:
+       * 1º añadir en ServicioCalculadora.thrift los metodos nuevos
+       * 
+	//Añado los nuevos que me den, este es para calcular el inverso 1/x
+	double operacion (1: double operando1)throws (1: CalculadoraException excepcion),
+	double raiz (1: double operando1)throws (1: CalculadoraException excepcion),
+	string getOperacion ()throws (1: CalculadoraException excepcion),
+	//mirar en javadoc 
+	double getOperacion();
+		
+		2º ejecutarCMD:
+		- cd ruta al thrift de la practica
+		-thrift-0.21.0.exe --gen java ServicioCalculadora.thrift
+		-refresh y copiar y pegar el thrifStubs en el src/main/java y se crea solo el package
+
+		3º Adaptador: 
+    
+       crear estos metodos o similares: 
+     
+        
+    @Override
+    public double operacion(double operando1) throws CalculadoraException, TException {
+        try {
+            return this.implementacionOperacion(operando1);
+        } catch (ArithmeticException e) {
+            throw new CalculadoraException("Error: Indeterminacion");
+        } catch (Exception e) {
+            throw new CalculadoraException("Error: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    public double raiz(double operando1) throws  TException {
+            return this.implementacionRaiz(operando1);
+    }
+    
+    @Override
+    public String getOperacion() throws TException {
+        return this.implementacionGetOperacion();
+    }
+		@Override
+	public double getOperacion()  throws TException{
+		return this.implementaciongetOperacion();
+	}
+    
+    4º OperacionesCalculadora:
+    
+    -DECLARAR :     private String operacion ; 
+    -CONSTRUCTOR: this.operacion="Ninguna";
+    
+    public double implementacionOperacion(double operando1) throws Exception {
+	    lock.writeLock().lock();  // Bloqueamos la escritura
+	    try {
+	        if (operando1 == 0) {
+	            throw new CalculadoraException("Indeterminacion");  // Excepción personalizada
+	        }
+	        return resultado = 1 / operando1;  // Guardamos y retornamos el inverso
+	    } finally {
+	        lock.writeLock().unlock();  // Liberamos el bloqueo de escritura
+	        operacion = "Inverso";
+	    }
+    }
+    
+    public double implementacionRaiz(double operando1) {
+        lock.writeLock().lock();
+        try {
+            resultado =Math.sqrt(operando1) ; // Calcular raiz
+            return resultado;
+        } finally {
+            lock.writeLock().unlock();
+            operacion = "Raiz";
+        }
+    }
+    
+    public String implementacionGetOperacion() {
+        lock.readLock().lock();
+        try {
+            return operacion; // Retorna el último resultado
+        } finally {
+            lock.readLock().unlock();
+            
+        }
+    }
+
+	// NUEVO: Método para obtener el resultado del inverso//MIRARJAVADOC
+    
+    public double implementaciongetOperacion() throws TException { //String operacion
+        lock.readLock().lock();
+        try {
+            return resultado;  // Retorna el último resultado (inverso calculado) //operacion
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
